@@ -1,0 +1,275 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded by: MLA
+'Project Start Date: 12/29/2010
+'Hooks:
+'  14350 Customer Populate
+'   14383 Customer Post Save Clear
+'  29855 Prospect Post Save Clear
+'   29810 Prospect Populate
+'  14460 Vendor Populate
+'  14471 Vendor Post Save Clear
+
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.Intrinsic.Control.CallSub(Load)
+
+Program.Sub.Main.End
+
+Program.Sub.Load.Start
+V.Local.sError.Declare(String)
+
+F.Intrinsic.Control.SetErrorHandler("Load_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,14471)
+	F.Intrinsic.Control.CallSub(Vendor)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,14460)
+	F.Intrinsic.Control.CallSub(Vendor)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,14350)
+	F.Intrinsic.Control.CallSub(Cust)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,14383)
+	F.Intrinsic.Control.CallSub(Cust)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,29810)
+	F.Intrinsic.Control.CallSub(Prosp)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,29855)
+	F.Intrinsic.Control.CallSub(Prosp)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.CallSub(Unload)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Load_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Load.End
+
+Program.Sub.Vendor.Start
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sRec.Declare(String)
+V.Local.sName.Declare(String)
+V.Local.sNum.Declare(String)
+V.Local.sSql.Declare(String)
+
+F.Intrinsic.Control.SetErrorHandler("Vendor_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.Intrinsic.Control.If(V.Caller.Switches,=,"N")
+	F.Intrinsic.UI.Inputbox("Enter vendor name.","Vendor Name Entry","",V.Local.sRet)
+	F.Intrinsic.Control.If(V.Local.sRet,<>,"")
+		V.Local.sName.Set(V.Local.sRet)
+		F.Intrinsic.String.Replace(V.Local.sRet," ","",V.Local.sRet)
+		F.Intrinsic.String.StripCharacters(V.Local.sRet,V.Local.sRet)
+		F.Intrinsic.String.Left(V.Local.sRet,3,V.Local.sRet)
+		Function.Intrinsic.String.Concat("Select VENDOR from "VENDOR_MASTER" Where REC = 1 and VENDOR Like '",Variable.Local.sRet,"%' ORDER BY VENDOR DESC",Variable.Local.sSql)
+		F.ODBC.Connection!con.OpenRecordsetRW("rst",V.Local.sSql)
+		F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,"True")
+			F.Intrinsic.String.Concat(V.Local.sRet,"000",V.Local.sNum)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!VENDOR,3,V.Local.sNum)
+			F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+			F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+			F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+		F.Intrinsic.Control.EndIf
+	F.ODBC.con!rst.Close
+	V.Passed.000002.Set(V.Local.sNum)
+	V.Passed.000048.Set(V.Local.sName)
+	V.Passed.000049.Set(V.Local.sName)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+F.Intrinsic.API.SetAlwaysOnTop(V.Caller.Handle,True)
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Vendor_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Vendor.End
+
+Program.Sub.Unload.Start
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+Program.Sub.Unload.End
+
+Program.Sub.Cust.Start
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sRec.Declare(String)
+V.Local.sName.Declare(String)
+V.Local.sNum.Declare(String)
+V.Local.sNum1.Declare(String)
+V.Local.sSql.Declare(String)
+
+F.Intrinsic.Control.SetErrorHandler("Cust_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.Intrinsic.Control.If(V.Caller.Switches,=,"N")
+	F.Intrinsic.UI.Inputbox("Enter customer name.","Customer Name Entry","",V.Local.sRet)
+	F.Intrinsic.Control.If(V.Local.sRet,<>,"")
+		V.Local.sName.Set(V.Local.sRet)
+		F.Intrinsic.String.Replace(V.Local.sRet," ","",V.Local.sRet)
+		F.Intrinsic.String.StripCharacters(V.Local.sRet,V.Local.sRet)
+		F.Intrinsic.String.Left(V.Local.sRet,3,V.Local.sRet)
+		Function.Intrinsic.String.Concat("Select PROSPECT from "PROSPECT_MASTER" WHERE PROSPECT Like '",Variable.Local.sRet,"%' ORDER BY PROSPECT DESC",Variable.Local.sSql)
+		F.ODBC.Connection!con.OpenRecordsetRW("rst",V.Local.sSql)
+		F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,"True")
+			F.ODBC.con!rst.Close
+			Function.Intrinsic.String.Concat("Select CUSTOMER from "CUSTOMER_MASTER" Where REC = 1 and CUSTOMER Like '",Variable.Local.sRet,"%' ORDER BY CUSTOMER DESC",Variable.Local.sSql)
+			F.ODBC.Connection!con.OpenRecordsetRW("rst",V.Local.sSql)
+			F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,True)
+				F.Intrinsic.String.Concat(V.Local.sRet,"000",V.Local.sNum)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!CUSTOMER,3,V.Local.sNum)
+				F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+				F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+				F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+			F.Intrinsic.Control.EndIf
+			F.ODBC.con!rst.Close
+		F.Intrinsic.Control.Else
+			Function.Intrinsic.String.Concat("Select CUSTOMER from "CUSTOMER_MASTER" Where REC = 1 and CUSTOMER Like '",Variable.Local.sRet,"%' ORDER BY CUSTOMER DESC",Variable.Local.sSql)
+			F.ODBC.Connection!con.OpenRecordsetRW("rstCust",V.Local.sSql)
+			F.Intrinsic.Control.If(V.ODBC.con!rstCust.EOF,=,True)
+				F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!PROSPECT,3,V.Local.sNum)
+				F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+				F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+				F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!PROSPECT,3,V.Local.sNum)
+				F.Intrinsic.String.Right(V.ODBC.con!rstCust.FieldValTrim!CUSTOMER,3,V.Local.sNum1)
+				F.Intrinsic.Control.If(V.Local.sNum,>,V.Local.sNum1)
+					F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!PROSPECT,3,V.Local.sNum)
+					F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+					F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+					F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Right(V.ODBC.con!rstCust.FieldValTrim!CUSTOMER,3,V.Local.sNum)
+					F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+					F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+					F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	V.Passed.000002.Set(V.Local.sNum)
+	V.Passed.000005.Set(V.Local.sName)
+	V.Passed.000006.Set(V.Local.sName)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+F.Intrinsic.API.SetAlwaysOnTop(V.Caller.Handle,True)
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Cust_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Cust.End
+
+Program.Sub.Prosp.Start
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sRec.Declare(String)
+V.Local.sName.Declare(String)
+V.Local.sNum.Declare(String)
+V.Local.sNum1.Declare(String)
+V.Local.sSql.Declare(String)
+V.Local.bChk.Declare(Boolean)
+
+V.Local.bChk.Set(False)
+F.Intrinsic.Control.SetErrorHandler("Prosp_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.Intrinsic.Control.If(V.Caller.Switches,=,"N")
+	V.Local.bChk.Set(True)
+F.Intrinsic.Control.ElseIf(V.Caller.Switches,=,"S")
+	V.Local.bChk.Set(True)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Local.bChk,=,True)
+	F.Intrinsic.UI.Inputbox("Enter prospect name.","Prospect Name Entry","",V.Local.sRet)
+	F.Intrinsic.Control.If(V.Local.sRet,<>,"")
+		V.Local.sName.Set(V.Local.sRet)
+		F.Intrinsic.String.Replace(V.Local.sRet," ","",V.Local.sRet)
+		F.Intrinsic.String.StripCharacters(V.Local.sRet,V.Local.sRet)
+		F.Intrinsic.String.Left(V.Local.sRet,3,V.Local.sRet)
+		Function.Intrinsic.String.Concat("Select PROSPECT from "PROSPECT_MASTER" WHERE PROSPECT Like '",Variable.Local.sRet,"%' ORDER BY PROSPECT DESC",Variable.Local.sSql)
+		F.ODBC.Connection!con.OpenRecordsetRW("rst",V.Local.sSql)
+		F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,"True")
+			F.ODBC.con!rst.Close
+			Function.Intrinsic.String.Concat("Select CUSTOMER from "CUSTOMER_MASTER" Where REC = 1 and CUSTOMER Like '",Variable.Local.sRet,"%' ORDER BY CUSTOMER DESC",Variable.Local.sSql)
+			F.ODBC.Connection!con.OpenRecordsetRW("rst",V.Local.sSql)
+			F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,True)
+				F.Intrinsic.String.Concat(V.Local.sRet,"000",V.Local.sNum)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!CUSTOMER,3,V.Local.sNum)
+				F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+				F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+				F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+			F.Intrinsic.Control.EndIf
+			F.ODBC.con!rst.Close
+		F.Intrinsic.Control.Else
+			Function.Intrinsic.String.Concat("Select CUSTOMER from "CUSTOMER_MASTER" Where REC = 1 and CUSTOMER Like '",Variable.Local.sRet,"%' ORDER BY CUSTOMER DESC",Variable.Local.sSql)
+			F.ODBC.Connection!con.OpenRecordsetRW("rstCust",V.Local.sSql)
+			F.Intrinsic.Control.If(V.ODBC.con!rstCust.EOF,=,True)
+				F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!PROSPECT,3,V.Local.sNum)
+				F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+				F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+				F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!PROSPECT,3,V.Local.sNum)
+				F.Intrinsic.String.Right(V.ODBC.con!rstCust.FieldValTrim!CUSTOMER,3,V.Local.sNum1)
+				F.Intrinsic.Control.If(V.Local.sNum,>,V.Local.sNum1)
+					F.Intrinsic.String.Right(V.ODBC.con!rst.FieldValTrim!PROSPECT,3,V.Local.sNum)
+					F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+					F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+					F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Right(V.ODBC.con!rstCust.FieldValTrim!CUSTOMER,3,V.Local.sNum)
+					F.Intrinsic.Math.Add(V.Local.sNum.Long,1,V.Local.sNum)
+					F.Intrinsic.String.LPad(V.Local.sNum,"0",3,V.Local.sNum)
+					F.Intrinsic.String.Concat(V.Local.sRet,V.Local.sNum,V.Local.sNum)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	V.Passed.000002.Set(V.Local.sNum)
+	V.Passed.000005.Set(V.Local.sName)
+	V.Passed.000006.Set(V.Local.sName)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+F.Intrinsic.API.SetAlwaysOnTop(V.Caller.Handle,True)
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Prosp_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Prosp.End
+
+Program.Sub.Comments.Start
+${$0$}$ATG_4106_Cust_Vend_Prosp_Auto_Num$}$RLK$}$5/31/2016
+${$1$}$$}$$}$5$}$29855$}$Post-CLR Hook$}$5/31/2016 10:21:04 AM$}$(Program: CRM004; Screen: PPSM001)
+
+${$1$}$$}$$}$4$}$29810$}$Populate Hook$}$5/31/2016 10:20:47 AM$}$(Program: CRM004; Screen: PPSM001)
+
+${$1$}$$}$$}$3$}$14383$}$Post Clear$}$5/31/2016 10:20:34 AM$}$(Program: AR0020GI; Screen: ARS002A1)
+
+${$1$}$$}$$}$2$}$14350$}$Populate Hook$}$5/31/2016 10:20:16 AM$}$(Program: AR0020GI; Screen: ARS002A1)
+
+${$1$}$$}$$}$1$}$14460$}$POPULATE-HOOK$}$5/31/2016 10:20:04 AM$}$(Program: AP0020GI; Screen: APS002A)
+
+${$1$}$$}$$}$0$}$14471$}$POST-CLR-HOOK$}$5/31/2016 10:19:41 AM$}$(Program: AP0020GI; Screen: APS002A)
+
+Program.Sub.Comments.End
+
